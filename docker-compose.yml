@@ -1,13 +1,13 @@
 services:
-    redis-microservice:
-        image: redis:7-alpine
-        container_name: redis
-        restart: on-failure
-        ports:
-            - '6379:6379'
-        volumes:
-            - my_diplom_redis_data:/data
-        command: ['redis-server', '--appendonly', 'yes']
+    # redis-microservice:
+    #     image: redis:7-alpine
+    #     container_name: redis
+    #     restart: on-failure
+    #     ports:
+    #         - '6379:6379'
+    #     volumes:
+    #         - my_diplom_redis_data:/data
+    #     command: ['redis-server', '--appendonly', 'yes']
     postgres-diplom:
         image: postgres:15
         container_name: postgres-my-diplom-db

@@ -6,6 +6,8 @@ import {
     EventSubscriber,
     InsertEvent,
     JoinColumn,
+    JoinTable,
+    ManyToMany,
     ManyToOne,
     PrimaryGeneratedColumn,
     RemoveEvent,
@@ -19,12 +21,12 @@ export class Books {
     @PrimaryGeneratedColumn('uuid')
     id: string;
 
-    @ManyToOne(() => Authors)
-    @JoinColumn()
+    @ManyToMany(() => Authors)
+    @JoinTable({ name: 'books_and_authors' })
     author: Authors;
 
-    @ManyToOne(() => Genres)
-    @JoinColumn()
+    @ManyToMany(() => Genres)
+    @JoinTable({ name: 'books_and_genres' })
     genres: Genres;
 
     @ManyToOne(() => BooksType)
@@ -37,11 +39,11 @@ export class Books {
     @Column({ default: false })
     canBeRented: boolean;
 
-    @Column('decimal', { precision: 10, scale: 2 })
-    price: number;
+    @Column({ default: false })
+    onlyForRent: boolean;
 
     @Column('decimal', { precision: 10, scale: 2 })
-    rentPrice: number;
+    price: number;
 
     @Column({ type: 'text' })
     description: string;

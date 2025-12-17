@@ -25,9 +25,6 @@ export class Rent {
     @JoinColumn()
     seller: Users;
 
-    @Column('decimal', { precision: 10, scale: 2 })
-    price: number;
-
     @Column()
     rentStart: Date;
 

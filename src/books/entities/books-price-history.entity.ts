@@ -25,9 +25,6 @@ export class BooksPriceHistory {
     @Column('decimal', { precision: 10, scale: 2 })
     price: number;
 
-    @Column('decimal', { precision: 10, scale: 2 })
-    rentPrice: number;
-
     @CreateDateColumn()
     created_at: Date;
 }
@@ -51,7 +48,6 @@ export class BooksPriceHistorySubscriber implements EntitySubscriberInterface<Bo
             const priceHistory = booksPriceHistoryRepository.create({
                 books: event.entity,
                 price: event.entity.price,
-                rentPrice: event.entity.rentPrice,
             });
 
             await booksPriceHistoryRepository.save(priceHistory);
@@ -65,11 +61,9 @@ export class BooksPriceHistorySubscriber implements EntitySubscriberInterface<Bo
         }
 
         const priceChanged = event.entity.price !== event.databaseEntity.price;
-        const rentPriceChanged =
-            event.entity.rentPrice !== event.databaseEntity.rentPrice;
 
         // Если ни одна из цен не изменилась - выходим
-        if (!priceChanged && !rentPriceChanged) {
+        if (!priceChanged) {
             return;
         }
 
@@ -82,22 +76,11 @@ export class BooksPriceHistorySubscriber implements EntitySubscriberInterface<Bo
             order: { created_at: 'DESC' },
         });
 
-        // Создаем новую запись только если цены действительно изменились
-        // (дополнительная проверка на случай, если цены изменились на те же значения)
-        const shouldCreateNewRecord =
-            !lastPriceHistory ||
-            (priceChanged && lastPriceHistory.price !== event.entity.price) ||
-            (rentPriceChanged &&
-                lastPriceHistory.rentPrice !== event.entity.rentPrice);
+        const priceHistory = booksPriceHistoryRepository.create({
+            books: { id: event.entity.id },
+            price: event.entity.price,
+        });
 
-        if (shouldCreateNewRecord) {
-            const priceHistory = booksPriceHistoryRepository.create({
-                books: { id: event.entity.id },
-                price: event.entity.price,
-                rentPrice: event.entity.rentPrice,
-            });
-
-            await booksPriceHistoryRepository.save(priceHistory);
-        }
+        await booksPriceHistoryRepository.save(priceHistory);
     }
 }
