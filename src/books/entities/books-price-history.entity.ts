@@ -70,12 +70,6 @@ export class BooksPriceHistorySubscriber implements EntitySubscriberInterface<Bo
         const booksPriceHistoryRepository =
             event.manager.getRepository(BooksPriceHistory);
 
-        // Получаем последнюю запись в истории цен для этой книги
-        const lastPriceHistory = await booksPriceHistoryRepository.findOne({
-            where: { books: { id: event.entity.id } },
-            order: { created_at: 'DESC' },
-        });
-
         const priceHistory = booksPriceHistoryRepository.create({
             books: { id: event.entity.id },
             price: event.entity.price,
