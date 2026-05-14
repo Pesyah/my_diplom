@@ -12,6 +12,7 @@ import { CreateBookDto } from './dto/create-book.dto';
 import { UpdateAuthorDto } from './dto/update-author.dto';
 import { UpdateBookDto } from './dto/update-book.dto';
 import { Authors } from './entities/authors.entity';
+import { BooksPriceHistory } from './entities/books-price-history.entity';
 import { BooksType } from './entities/books-type.entity';
 import { Books } from './entities/books.entity';
 import { Genres } from './entities/genres.entity';
@@ -28,6 +29,8 @@ export class BooksService {
         private genresRepository: Repository<Genres>,
         @InjectRepository(BooksType)
         private booksTypeRepository: Repository<BooksType>,
+        @InjectRepository(BooksPriceHistory)
+        private booksPriceHistoryRepository: Repository<BooksPriceHistory>,
     ) {}
 
     // Публичные методы
@@ -107,7 +110,12 @@ export class BooksService {
             users: { id: userId },
         });
 
-        return this.booksRepository.save(book);
+        const savedBook = await this.booksRepository.save(book);
+        await this.incrementAuthorsBooksCount(authors);
+        await this.incrementGenresBooksCount(genres);
+        await this.createPriceHistory(savedBook, savedBook.price);
+
+        return savedBook;
     }
 
     async activate(dto: ActivateBookDto, userId: string): Promise<Books> {
@@ -144,6 +152,10 @@ export class BooksService {
         if (!book) {
             throw new NotFoundException('Книга не найдена или доступ запрещен');
         }
+
+        const previousAuthors = [...(book.authors ?? [])];
+        const previousGenres = [...(book.genres ?? [])];
+        const previousPrice = Number(book.price);
 
         if (!book.isActive && dto.isActive === true) {
             throw new BadRequestException(
@@ -195,16 +207,32 @@ export class BooksService {
         }
 
         // Убираем isActive из dto чтобы не перезаписать
-        const { isActive, ...updateData } = dto;
+        const {
+            isActive,
+            authorsIds,
+            genresIds,
+            booksTypeId,
+            id,
+            ...updateData
+        } = dto;
         Object.assign(book, updateData);
 
-        return this.booksRepository.save(book);
+        const savedBook = await this.booksRepository.save(book);
+
+        await this.syncAuthorsBooksCount(previousAuthors, savedBook.authors ?? []);
+        await this.syncGenresBooksCount(previousGenres, savedBook.genres ?? []);
+
+        if (dto.price !== undefined && Number(dto.price) !== previousPrice) {
+            await this.createPriceHistory(savedBook, dto.price);
+        }
+
+        return savedBook;
     }
 
     async delete(id: string, userId: string): Promise<void> {
         const book = await this.booksRepository.findOne({
             where: { id, users: { id: userId } },
-            relations: { rent: true },
+            relations: { authors: true, genres: true, rent: true },
         });
 
         if (!book) {
@@ -219,6 +247,8 @@ export class BooksService {
         }
 
         await this.booksRepository.remove(book);
+        await this.decrementAuthorsBooksCount(book.authors ?? []);
+        await this.decrementGenresBooksCount(book.genres ?? []);
     }
 
     // Админские методы для авторов
@@ -247,5 +277,84 @@ export class BooksService {
         }
 
         await this.authorsRepository.delete(id);
+    }
+
+    private async createPriceHistory(book: Books, price: number) {
+        const priceHistory = this.booksPriceHistoryRepository.create({
+            books: { id: book.id },
+            price,
+        });
+
+        await this.booksPriceHistoryRepository.save(priceHistory);
+    }
+
+    private async incrementAuthorsBooksCount(authors: Authors[]) {
+        for (const author of authors) {
+            await this.authorsRepository.increment(
+                { id: author.id },
+                'booksCount',
+                1,
+            );
+        }
+    }
+
+    private async decrementAuthorsBooksCount(authors: Authors[]) {
+        for (const author of authors) {
+            await this.authorsRepository.decrement(
+                { id: author.id },
+                'booksCount',
+                1,
+            );
+        }
+    }
+
+    private async incrementGenresBooksCount(genres: Genres[]) {
+        for (const genre of genres) {
+            await this.genresRepository.increment(
+                { id: genre.id },
+                'countBooksWithGenre',
+                1,
+            );
+        }
+    }
+
+    private async decrementGenresBooksCount(genres: Genres[]) {
+        for (const genre of genres) {
+            await this.genresRepository.decrement(
+                { id: genre.id },
+                'countBooksWithGenre',
+                1,
+            );
+        }
+    }
+
+    private async syncAuthorsBooksCount(
+        previousAuthors: Authors[],
+        currentAuthors: Authors[],
+    ) {
+        const previousIds = new Set(previousAuthors.map((author) => author.id));
+        const currentIds = new Set(currentAuthors.map((author) => author.id));
+
+        await this.decrementAuthorsBooksCount(
+            previousAuthors.filter((author) => !currentIds.has(author.id)),
+        );
+        await this.incrementAuthorsBooksCount(
+            currentAuthors.filter((author) => !previousIds.has(author.id)),
+        );
+    }
+
+    private async syncGenresBooksCount(
+        previousGenres: Genres[],
+        currentGenres: Genres[],
+    ) {
+        const previousIds = new Set(previousGenres.map((genre) => genre.id));
+        const currentIds = new Set(currentGenres.map((genre) => genre.id));
+
+        await this.decrementGenresBooksCount(
+            previousGenres.filter((genre) => !currentIds.has(genre.id)),
+        );
+        await this.incrementGenresBooksCount(
+            currentGenres.filter((genre) => !previousIds.has(genre.id)),
+        );
     }
 }

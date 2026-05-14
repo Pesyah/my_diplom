@@ -91,6 +91,39 @@ export class RentService {
         });
     }
 
+    async findAllForAdmin(): Promise<Rent[]> {
+        return this.rentRepository.find({
+            relations: {
+                books: { authors: true, genres: true, booksType: true },
+                buyer: true,
+                seller: true,
+            },
+            order: { rentStart: 'DESC' },
+        });
+    }
+
+    async findOneForAdmin(id: string): Promise<Rent> {
+        const rent = await this.rentRepository.findOne({
+            where: { id },
+            relations: {
+                books: {
+                    authors: true,
+                    genres: true,
+                    booksType: true,
+                    users: true,
+                },
+                buyer: true,
+                seller: true,
+            },
+        });
+
+        if (!rent) {
+            throw new NotFoundException('Аренда не найдена');
+        }
+
+        return rent;
+    }
+
     async findOne(id: string, userId: string): Promise<Rent> {
         const rent = await this.findRentForUser(id, userId);
         if (!rent) {

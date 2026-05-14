@@ -31,7 +31,6 @@ export class SaleService {
                     genres: true,
                     booksType: true,
                 },
-                lock: { mode: 'pessimistic_write' },
             });
 
             if (!book) {
@@ -102,6 +101,34 @@ export class SaleService {
             },
             order: { created_at: 'DESC' },
         });
+    }
+
+    async findAllForAdmin(): Promise<Sales[]> {
+        return this.salesRepository.find({
+            relations: {
+                books: { authors: true, genres: true, booksType: true },
+                buyer: true,
+                seller: true,
+            },
+            order: { created_at: 'DESC' },
+        });
+    }
+
+    async findOneForAdmin(id: string): Promise<Sales> {
+        const sale = await this.salesRepository.findOne({
+            where: { id },
+            relations: {
+                books: { authors: true, genres: true, booksType: true },
+                buyer: true,
+                seller: true,
+            },
+        });
+
+        if (!sale) {
+            throw new NotFoundException('Продажа не найдена');
+        }
+
+        return sale;
     }
 
     async findOne(id: string, userId: string): Promise<Sales> {

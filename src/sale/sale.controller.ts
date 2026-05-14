@@ -2,7 +2,9 @@ import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from 'src/auth/auth.guard';
 import { GetUser } from 'src/auth/decorators/get-user.decorator';
+import { Roles } from 'src/auth/decorators/role.decorator';
 import { Users } from 'src/auth/entities/users.entity';
+import { RolesGuard } from 'src/auth/guard/rolesGuard';
 import { CreateSaleDto } from './dto/create-sale.dto';
 import { SaleService } from './sale.service';
 
@@ -37,6 +39,22 @@ export class SaleController {
     @ApiOperation({ summary: 'Получить покупки текущего пользователя' })
     findOutgoing(@GetUser() user: Users) {
         return this.saleService.findOutgoing(user.id);
+    }
+
+    @Get('admin/all')
+    @UseGuards(AuthGuard, RolesGuard)
+    @Roles('admin')
+    @ApiOperation({ summary: 'Получить все продажи для администратора' })
+    findAllForAdmin() {
+        return this.saleService.findAllForAdmin();
+    }
+
+    @Get('admin/by-id/:id')
+    @UseGuards(AuthGuard, RolesGuard)
+    @Roles('admin')
+    @ApiOperation({ summary: 'Получить любую продажу по ID для администратора' })
+    findOneForAdmin(@Param('id') id: string) {
+        return this.saleService.findOneForAdmin(id);
     }
 
     @Get('by-id/:id')

@@ -11,7 +11,9 @@ import {
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from 'src/auth/auth.guard';
 import { GetUser } from 'src/auth/decorators/get-user.decorator';
+import { Roles } from 'src/auth/decorators/role.decorator';
 import { Users } from 'src/auth/entities/users.entity';
+import { RolesGuard } from 'src/auth/guard/rolesGuard';
 import { CreateRentDto } from './dto/create-rent.dto';
 import { UpdateRentDto } from './dto/update-rent.dto';
 import { RentService } from './rent.service';
@@ -45,6 +47,22 @@ export class RentController {
     @ApiOperation({ summary: 'Получить исходящие заявки на аренду' })
     findOutgoing(@GetUser() user: Users) {
         return this.rentService.findOutgoing(user.id);
+    }
+
+    @Get('admin/all')
+    @UseGuards(AuthGuard, RolesGuard)
+    @Roles('admin')
+    @ApiOperation({ summary: 'Получить все аренды для администратора' })
+    findAllForAdmin() {
+        return this.rentService.findAllForAdmin();
+    }
+
+    @Get('admin/by-id/:id')
+    @UseGuards(AuthGuard, RolesGuard)
+    @Roles('admin')
+    @ApiOperation({ summary: 'Получить любую аренду по ID для администратора' })
+    findOneForAdmin(@Param('id') id: string) {
+        return this.rentService.findOneForAdmin(id);
     }
 
     @Get('by-id/:id')

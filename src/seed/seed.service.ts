@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UserRoleType } from 'src/auth/entities/user-roles.entity';
+import { Authors } from 'src/books/entities/authors.entity';
 import { BooksType } from 'src/books/entities/books-type.entity';
 import { Genres } from 'src/books/entities/genres.entity';
 import { Repository } from 'typeorm';
@@ -14,6 +15,8 @@ export class SeedService {
         private readonly booksTypeRepository: Repository<BooksType>,
         @InjectRepository(Genres)
         private readonly genresRepository: Repository<Genres>,
+        @InjectRepository(Authors)
+        private readonly authorsRepository: Repository<Authors>,
     ) {
         this.runSeeds();
     }
@@ -22,6 +25,7 @@ export class SeedService {
         await this.userRoleType();
         await this.booksType();
         await this.genres();
+        await this.authors();
     }
 
     async userRoleType() {
@@ -76,6 +80,118 @@ export class SeedService {
             { id: 23, name: 'Искусство и культура', countBooksWithGenre: 0 },
             { id: 24, name: 'Здоровье', countBooksWithGenre: 0 },
         ]);
+    }
+
+    async authors() {
+        const authors: Array<Partial<Authors>> = [
+            {
+                name: 'Лев',
+                surname: 'Толстой',
+                patronymic: 'Николаевич',
+                dateOfBirth: new Date('1828-09-09'),
+                dateOfDeath: new Date('1910-11-20'),
+            },
+            {
+                name: 'Федор',
+                surname: 'Достоевский',
+                patronymic: 'Михайлович',
+                dateOfBirth: new Date('1821-11-11'),
+                dateOfDeath: new Date('1881-02-09'),
+            },
+            {
+                name: 'Александр',
+                surname: 'Пушкин',
+                patronymic: 'Сергеевич',
+                dateOfBirth: new Date('1799-06-06'),
+                dateOfDeath: new Date('1837-02-10'),
+            },
+            {
+                name: 'Антон',
+                surname: 'Чехов',
+                patronymic: 'Павлович',
+                dateOfBirth: new Date('1860-01-29'),
+                dateOfDeath: new Date('1904-07-15'),
+            },
+            {
+                name: 'Михаил',
+                surname: 'Булгаков',
+                patronymic: 'Афанасьевич',
+                dateOfBirth: new Date('1891-05-15'),
+                dateOfDeath: new Date('1940-03-10'),
+            },
+            {
+                name: 'Николай',
+                surname: 'Гоголь',
+                patronymic: 'Васильевич',
+                dateOfBirth: new Date('1809-04-01'),
+                dateOfDeath: new Date('1852-03-04'),
+            },
+            {
+                name: 'Иван',
+                surname: 'Тургенев',
+                patronymic: 'Сергеевич',
+                dateOfBirth: new Date('1818-11-09'),
+                dateOfDeath: new Date('1883-09-03'),
+            },
+            {
+                name: 'Джордж',
+                surname: 'Оруэлл',
+                dateOfBirth: new Date('1903-06-25'),
+                dateOfDeath: new Date('1950-01-21'),
+            },
+            {
+                name: 'Эрих',
+                surname: 'Ремарк',
+                patronymic: 'Мария',
+                dateOfBirth: new Date('1898-06-22'),
+                dateOfDeath: new Date('1970-09-25'),
+            },
+            {
+                name: 'Рэй',
+                surname: 'Брэдбери',
+                dateOfBirth: new Date('1920-08-22'),
+                dateOfDeath: new Date('2012-06-05'),
+            },
+            {
+                name: 'Стивен',
+                surname: 'Кинг',
+                dateOfBirth: new Date('1947-09-21'),
+            },
+            {
+                name: 'Джоан',
+                surname: 'Роулинг',
+                dateOfBirth: new Date('1965-07-31'),
+            },
+            {
+                name: 'Агата',
+                surname: 'Кристи',
+                dateOfBirth: new Date('1890-09-15'),
+                dateOfDeath: new Date('1976-01-12'),
+            },
+            {
+                name: 'Айзек',
+                surname: 'Азимов',
+                dateOfBirth: new Date('1920-01-02'),
+                dateOfDeath: new Date('1992-04-06'),
+            },
+            {
+                name: 'Харуки',
+                surname: 'Мураками',
+                dateOfBirth: new Date('1949-01-12'),
+            },
+        ];
+
+        for (const author of authors) {
+            const exists = await this.authorsRepository.exists({
+                where: { name: author.name },
+            });
+
+            if (!exists) {
+                await this.authorsRepository.save(
+                    this.authorsRepository.create(author),
+                );
+            }
+        }
     }
 
     private async createMissing<T extends { id: number }>(

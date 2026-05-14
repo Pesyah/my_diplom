@@ -1,4 +1,4 @@
-import { nanoid } from 'nanoid';
+import { randomBytes } from 'crypto';
 import { Users } from 'src/auth/entities/users.entity';
 import { Rent } from 'src/rent/entities/rent.entity';
 import {
@@ -79,7 +79,7 @@ export class Books {
 
     @BeforeInsert()
     generateListingCode() {
-        this.listingCode = `BOOK-${nanoid(8)}`;
+        this.listingCode = `BOOK-${randomBytes(6).toString('hex')}`;
     }
 }
 
