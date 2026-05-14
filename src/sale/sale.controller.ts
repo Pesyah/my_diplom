@@ -1,34 +1,47 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
-import { SaleService } from './sale.service';
+import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { AuthGuard } from 'src/auth/auth.guard';
+import { GetUser } from 'src/auth/decorators/get-user.decorator';
+import { Users } from 'src/auth/entities/users.entity';
 import { CreateSaleDto } from './dto/create-sale.dto';
-import { UpdateSaleDto } from './dto/update-sale.dto';
+import { SaleService } from './sale.service';
 
 @Controller('sale')
+@UseGuards(AuthGuard)
+@ApiTags('sale')
+@ApiBearerAuth('JWT-auth')
 export class SaleController {
-  constructor(private readonly saleService: SaleService) {}
+    constructor(private readonly saleService: SaleService) {}
 
-  @Post()
-  create(@Body() createSaleDto: CreateSaleDto) {
-    return this.saleService.create(createSaleDto);
-  }
+    @Post()
+    @ApiOperation({ summary: 'Купить книгу' })
+    create(@Body() createSaleDto: CreateSaleDto, @GetUser() user: Users) {
+        return this.saleService.create(createSaleDto, user.id);
+    }
 
-  @Get()
-  findAll() {
-    return this.saleService.findAll();
-  }
+    @Get()
+    @ApiOperation({
+        summary: 'Получить все продажи и покупки текущего пользователя',
+    })
+    findAll(@GetUser() user: Users) {
+        return this.saleService.findAll(user.id);
+    }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.saleService.findOne(+id);
-  }
+    @Get('incoming')
+    @ApiOperation({ summary: 'Получить продажи текущего пользователя' })
+    findIncoming(@GetUser() user: Users) {
+        return this.saleService.findIncoming(user.id);
+    }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateSaleDto: UpdateSaleDto) {
-    return this.saleService.update(+id, updateSaleDto);
-  }
+    @Get('outgoing')
+    @ApiOperation({ summary: 'Получить покупки текущего пользователя' })
+    findOutgoing(@GetUser() user: Users) {
+        return this.saleService.findOutgoing(user.id);
+    }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.saleService.remove(+id);
-  }
+    @Get('by-id/:id')
+    @ApiOperation({ summary: 'Получить продажу по ID' })
+    findOne(@Param('id') id: string, @GetUser() user: Users) {
+        return this.saleService.findOne(id, user.id);
+    }
 }

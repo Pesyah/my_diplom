@@ -1,5 +1,5 @@
+import { Users } from 'src/auth/entities/users.entity';
 import { Books } from 'src/books/entities/books.entity';
-import { Users } from 'src/users/entities/users.entity';
 import {
     Column,
     Entity,
@@ -30,4 +30,14 @@ export class Rent {
 
     @Column()
     rentEnd: Date;
+
+    @Column({ default: false })
+    isAccepted: boolean;
+
+    @Column('decimal', {
+        precision: 10,
+        scale: 2,
+        nullable: true,
+    })
+    penaltyPrice?: number;
 }

@@ -1,9 +1,13 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, ManyToMany, PrimaryGeneratedColumn } from 'typeorm';
+import { Books } from './books.entity';
 
 @Entity()
 export class Authors {
     @PrimaryGeneratedColumn('uuid')
     id: string;
+
+    @ManyToMany(() => Books, (books) => books.authors)
+    books: Books[];
 
     @Column({ length: 100 })
     name: string;

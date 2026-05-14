@@ -7,36 +7,31 @@ import {
     ManyToOne,
     PrimaryGeneratedColumn,
 } from 'typeorm';
-import { Sales } from './sale.entity';
 
-@Entity()
-export class Payment {
+@Entity('documents')
+export class Document {
     @PrimaryGeneratedColumn('uuid')
     id: string;
 
-    @ManyToOne(() => Sales)
-    @JoinColumn()
-    sales: Sales;
-
-    @Column({ nullable: true })
-    paymentId: string;
+    @Column()
+    filename: string;
 
     @Column()
-    orderNumber: string;
-
-    @Column({ type: 'int', default: 0 })
-    amount: number;
+    originalName: string;
 
     @Column()
-    status: string;
+    mimeType: string;
 
     @Column()
-    nameBank: string;
+    size: number;
+
+    @Column()
+    path: string;
 
     @ManyToOne(() => Users)
     @JoinColumn()
     users: Users;
 
     @CreateDateColumn()
-    created_at: Date;
+    createdAt: Date;
 }

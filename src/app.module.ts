@@ -1,10 +1,15 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ServeStaticModule } from '@nestjs/serve-static';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { join } from 'path';
+import { AuthModule } from './auth/auth.module';
 import { BooksModule } from './books/books.module';
+import { DocumentsModule } from './documents/documents.module';
 import { RentModule } from './rent/rent.module';
 import { SaleModule } from './sale/sale.module';
-import { UsersModule } from './users/users.module';
+import { SeedModule } from './seed/seed.module';
+import { UserRoleModule } from './userRole/userRole.module';
 
 @Module({
     imports: [
@@ -26,7 +31,14 @@ import { UsersModule } from './users/users.module';
             }),
             inject: [ConfigService],
         }),
-        UsersModule,
+        ServeStaticModule.forRoot({
+            rootPath: join(__dirname, '..', 'uploads'),
+            serveRoot: '/uploads', // URL путь
+        }),
+        AuthModule,
+        DocumentsModule,
+        UserRoleModule,
+        SeedModule,
         BooksModule,
         SaleModule,
         RentModule,

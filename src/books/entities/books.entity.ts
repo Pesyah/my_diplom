@@ -1,4 +1,8 @@
+import { nanoid } from 'nanoid';
+import { Users } from 'src/auth/entities/users.entity';
+import { Rent } from 'src/rent/entities/rent.entity';
 import {
+    BeforeInsert,
     Column,
     DataSource,
     Entity,
@@ -9,6 +13,7 @@ import {
     JoinTable,
     ManyToMany,
     ManyToOne,
+    OneToMany,
     PrimaryGeneratedColumn,
     RemoveEvent,
 } from 'typeorm';
@@ -23,11 +28,18 @@ export class Books {
 
     @ManyToMany(() => Authors)
     @JoinTable({ name: 'books_and_authors' })
-    author: Authors;
+    authors: Authors[]; // массив, т.к. у книги может быть несколько авторов
 
     @ManyToMany(() => Genres)
     @JoinTable({ name: 'books_and_genres' })
-    genres: Genres;
+    genres: Genres[];
+
+    @OneToMany(() => Rent, (rent) => rent.books)
+    rent: Rent[];
+
+    @ManyToOne(() => Users)
+    @JoinColumn()
+    users: Users;
 
     @ManyToOne(() => BooksType)
     @JoinColumn()
@@ -42,7 +54,7 @@ export class Books {
     @Column({ default: false })
     onlyForRent: boolean;
 
-    @Column('decimal', { precision: 10, scale: 2 })
+    @Column({ type: 'decimal', precision: 10, scale: 2, unsigned: true })
     price: number;
 
     @Column({ type: 'text' })
@@ -53,6 +65,22 @@ export class Books {
 
     @Column('text', { nullable: false, array: true, default: [] })
     photoGallery: string[];
+
+    @Column({ default: false })
+    isActive: boolean;
+
+    @Column({
+        unique: true,
+    })
+    listingCode: string;
+
+    @Column({ nullable: true })
+    isbn: string;
+
+    @BeforeInsert()
+    generateListingCode() {
+        this.listingCode = `BOOK-${nanoid(8)}`;
+    }
 }
 
 @EventSubscriber()
@@ -66,27 +94,31 @@ export class BooksSubscriber implements EntitySubscriberInterface<Books> {
     }
 
     async afterInsert(event: InsertEvent<Books>) {
-        const author = event.entity.author;
-        if (!author) return;
+        const authors = event.entity.authors; // теперь массив
+        if (!authors || !authors.length) return;
 
-        await event.manager.increment(
-            Authors,
-            { id: author.id },
-            'booksCount',
-            1,
-        );
+        for (const author of authors) {
+            await event.manager.increment(
+                Authors,
+                { id: author.id },
+                'booksCount',
+                1,
+            );
+        }
     }
 
     async afterRemove(event: RemoveEvent<Books>) {
-        const author = event.entity?.author;
-        if (!author) return;
+        const authors = event.entity?.authors;
+        if (!authors || !authors.length) return;
 
-        await event.manager.decrement(
-            Authors,
-            { id: author.id },
-            'booksCount',
-            1,
-        );
+        for (const author of authors) {
+            await event.manager.decrement(
+                Authors,
+                { id: author.id },
+                'booksCount',
+                1,
+            );
+        }
     }
 }
 
@@ -102,25 +134,30 @@ export class BooksGenreSubscriber implements EntitySubscriberInterface<Books> {
 
     async afterInsert(event: InsertEvent<Books>) {
         const genres = event.entity.genres;
-        if (!genres) return;
+        if (!genres || !genres.length) return;
 
-        await event.manager.increment(
-            Genres,
-            { id: genres.id },
-            'countBooksWithGenre',
-            1,
-        );
+        // Инкремент для каждого жанра
+        for (const genre of genres) {
+            await event.manager.increment(
+                Genres,
+                { id: genre.id },
+                'countBooksWithGenre',
+                1,
+            );
+        }
     }
 
     async afterRemove(event: RemoveEvent<Books>) {
         const genres = event.entity?.genres;
-        if (!genres) return;
+        if (!genres || !genres.length) return;
 
-        await event.manager.decrement(
-            Genres,
-            { id: genres.id },
-            'countBooksWithGenre',
-            1,
-        );
+        for (const genre of genres) {
+            await event.manager.decrement(
+                Genres,
+                { id: genre.id },
+                'countBooksWithGenre',
+                1,
+            );
+        }
     }
 }

@@ -8,6 +8,7 @@ services:
     #     volumes:
     #         - my_diplom_redis_data:/data
     #     command: ['redis-server', '--appendonly', 'yes']
+
     postgres-diplom:
         image: postgres:15
         container_name: postgres-my-diplom-db
