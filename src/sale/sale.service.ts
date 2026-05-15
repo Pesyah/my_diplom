@@ -1,5 +1,6 @@
 import {
     BadRequestException,
+    ForbiddenException,
     Injectable,
     NotFoundException,
 } from '@nestjs/common';
@@ -51,19 +52,132 @@ export class SaleService {
                 throw new BadRequestException('Нельзя купить свою книгу');
             }
 
+            const acceptedSale = await salesRepository.findOne({
+                where: { books: { id: book.id }, isAccepted: true },
+                relations: { books: true },
+            });
+
+            if (acceptedSale) {
+                throw new BadRequestException('Книга уже продана');
+            }
+
+            const pendingSale = await salesRepository.findOne({
+                where: {
+                    books: { id: book.id },
+                    buyer: { id: buyerId },
+                    isAccepted: false,
+                },
+                relations: { books: true, buyer: true },
+            });
+
+            if (pendingSale) {
+                throw new BadRequestException(
+                    'Заявка на покупку этой книги уже создана',
+                );
+            }
+
             const sale = salesRepository.create({
                 books: book,
                 buyer: { id: buyerId },
                 seller: { id: book.users.id },
                 price: book.price,
+                isAccepted: false,
             });
 
-            const savedSale = await salesRepository.save(sale);
+            return salesRepository.save(sale);
+        });
+    }
+
+    async accept(id: string, sellerId: string): Promise<Sales> {
+        return this.salesRepository.manager.transaction(async (manager) => {
+            const booksRepository = manager.getRepository(Books);
+            const salesRepository = manager.getRepository(Sales);
+
+            const sale = await salesRepository.findOne({
+                where: { id },
+                relations: {
+                    books: {
+                        users: true,
+                        authors: true,
+                        genres: true,
+                        booksType: true,
+                    },
+                    buyer: true,
+                    seller: true,
+                },
+            });
+
+            if (!sale) {
+                throw new NotFoundException('Продажа не найдена');
+            }
+
+            if (!sale.books) {
+                throw new BadRequestException('Книга в продаже не найдена');
+            }
+
+            if (sale.seller.id !== sellerId) {
+                throw new ForbiddenException(
+                    'Подтвердить покупку может только продавец',
+                );
+            }
+
+            if (sale.isAccepted) {
+                throw new BadRequestException('Покупка уже подтверждена');
+            }
+
+            const book = await booksRepository.findOne({
+                where: { id: sale.books.id },
+                relations: {
+                    users: true,
+                    authors: true,
+                    genres: true,
+                    booksType: true,
+                },
+            });
+
+            if (!book) {
+                throw new NotFoundException('Книга не найдена');
+            }
+
+            if (book.users.id !== sellerId) {
+                throw new ForbiddenException(
+                    'Подтвердить покупку может только владелец книги',
+                );
+            }
+
+            if (!book.isActive) {
+                throw new BadRequestException('Книга уже недоступна');
+            }
+
+            if (book.onlyForRent) {
+                throw new BadRequestException(
+                    'Книга доступна только для аренды',
+                );
+            }
+
+            const acceptedSale = await salesRepository.findOne({
+                where: { books: { id: book.id }, isAccepted: true },
+                relations: { books: true },
+            });
+
+            if (acceptedSale && acceptedSale.id !== sale.id) {
+                throw new BadRequestException('Книга уже продана');
+            }
+
+            const deactivateResult = await booksRepository.update(
+                { id: book.id, isActive: true, onlyForRent: false },
+                { isActive: false },
+            );
+
+            if (deactivateResult.affected !== 1) {
+                throw new BadRequestException('Книга уже недоступна');
+            }
 
             book.isActive = false;
-            await booksRepository.save(book);
+            sale.books = book;
+            sale.isAccepted = true;
 
-            return savedSale;
+            return salesRepository.save(sale);
         });
     }
 

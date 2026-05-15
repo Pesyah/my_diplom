@@ -13,15 +13,15 @@ export class Rent {
     @PrimaryGeneratedColumn('uuid')
     id: string;
 
-    @ManyToOne(() => Books)
+    @ManyToOne(() => Books, { onDelete: 'SET NULL' })
     @JoinColumn()
     books: Books;
 
-    @ManyToOne(() => Users)
+    @ManyToOne(() => Users, { onDelete: 'SET NULL' })
     @JoinColumn()
     buyer: Users;
 
-    @ManyToOne(() => Users)
+    @ManyToOne(() => Users, { onDelete: 'SET NULL' })
     @JoinColumn()
     seller: Users;
 

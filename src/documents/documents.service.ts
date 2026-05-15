@@ -43,11 +43,12 @@ export class DocumentsService {
                 mimeType: file.mimetype,
                 size: file.size,
                 path: filePath,
-                users: { id: userId } as any,
+                users: { id: userId },
             });
-
+            console.log(document);
             return await this.documentRepository.save(document);
         } catch (error) {
+            console.log(error);
             throw new BadRequestException(
                 `Ошибка при сохранении файла: ${error.message}`,
             );

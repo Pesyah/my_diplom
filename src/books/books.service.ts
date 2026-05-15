@@ -35,19 +35,31 @@ export class BooksService {
 
     // Публичные методы
     async findAll(): Promise<Books[]> {
-        return this.booksRepository.find({
+        const books = await this.booksRepository.find({
             where: { isActive: true }, // Только активные книги
-            relations: { authors: true, genres: true, booksType: true },
+            relations: {
+                authors: true,
+                genres: true,
+                booksType: true,
+                priceHistory: true,
+            },
         });
+
+        return this.sortBooksPriceHistory(books);
     }
 
     async findById(id: string): Promise<Books> {
         const book = await this.booksRepository.findOne({
             where: { id },
-            relations: { authors: true, genres: true, booksType: true },
+            relations: {
+                authors: true,
+                genres: true,
+                booksType: true,
+                priceHistory: true,
+            },
         });
         if (!book) throw new NotFoundException('Книга не найдена');
-        return book;
+        return this.sortBookPriceHistory(book);
     }
 
     async findAllAuthors(): Promise<Authors[]> {
@@ -62,10 +74,17 @@ export class BooksService {
 
     // Юзерские методы
     async findByUser(userId: string): Promise<Books[]> {
-        return this.booksRepository.find({
+        const books = await this.booksRepository.find({
             where: { users: { id: userId } },
-            relations: { authors: true, genres: true, booksType: true },
+            relations: {
+                authors: true,
+                genres: true,
+                booksType: true,
+                priceHistory: true,
+            },
         });
+
+        return this.sortBooksPriceHistory(books);
     }
 
     async create(dto: CreateBookDto, userId: string): Promise<Books> {
@@ -277,6 +296,19 @@ export class BooksService {
         }
 
         await this.authorsRepository.delete(id);
+    }
+
+    private sortBooksPriceHistory(books: Books[]): Books[] {
+        return books.map((book) => this.sortBookPriceHistory(book));
+    }
+
+    private sortBookPriceHistory(book: Books): Books {
+        book.priceHistory = [...(book.priceHistory ?? [])].sort(
+            (left, right) =>
+                left.created_at.getTime() - right.created_at.getTime(),
+        );
+
+        return book;
     }
 
     private async createPriceHistory(book: Books, price: number) {

@@ -18,7 +18,9 @@ export class BooksPriceHistory {
     @PrimaryGeneratedColumn()
     id: number;
 
-    @ManyToOne(() => Books)
+    @ManyToOne(() => Books, (books) => books.priceHistory, {
+        onDelete: 'CASCADE',
+    })
     @JoinColumn()
     books: Books;
 

@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import {
+    Body,
+    Controller,
+    Get,
+    Param,
+    Patch,
+    Post,
+    UseGuards,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from 'src/auth/auth.guard';
 import { GetUser } from 'src/auth/decorators/get-user.decorator';
@@ -19,6 +27,12 @@ export class SaleController {
     @ApiOperation({ summary: 'Купить книгу' })
     create(@Body() createSaleDto: CreateSaleDto, @GetUser() user: Users) {
         return this.saleService.create(createSaleDto, user.id);
+    }
+
+    @Patch(':id/accept')
+    @ApiOperation({ summary: 'Подтвердить покупку владельцем книги' })
+    accept(@Param('id') id: string, @GetUser() user: Users) {
+        return this.saleService.accept(id, user.id);
     }
 
     @Get()

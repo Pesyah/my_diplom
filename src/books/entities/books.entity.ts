@@ -18,6 +18,7 @@ import {
     RemoveEvent,
 } from 'typeorm';
 import { Authors } from './authors.entity';
+import { BooksPriceHistory } from './books-price-history.entity';
 import { BooksType } from './books-type.entity';
 import { Genres } from './genres.entity';
 
@@ -37,11 +38,14 @@ export class Books {
     @OneToMany(() => Rent, (rent) => rent.books)
     rent: Rent[];
 
-    @ManyToOne(() => Users)
+    @OneToMany(() => BooksPriceHistory, (priceHistory) => priceHistory.books)
+    priceHistory: BooksPriceHistory[];
+
+    @ManyToOne(() => Users, { onDelete: 'CASCADE' })
     @JoinColumn()
     users: Users;
 
-    @ManyToOne(() => BooksType)
+    @ManyToOne(() => BooksType, { onDelete: 'SET NULL' })
     @JoinColumn()
     booksType: BooksType;
 
